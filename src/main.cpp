@@ -1,4 +1,5 @@
 #include "metrics.hpp"
+#include "probe.hpp"
 
 #include <atomic>
 #include <chrono>
@@ -36,17 +37,41 @@ std::string json_escape(const std::string& s) {
     return out;
 }
 
+std::string bstr(bool b) { return b ? "true" : "false"; }
+std::string qstr(const std::string& s) { return "\"" + json_escape(s) + "\""; }
+std::string num(double v) { return std::to_string(static_cast<long long>(std::llround(v))); }
+
 std::string serialize(const amplitude::Snapshot& s) {
+    namespace p = amplitude::probe;
+    auto audio = p::audio();
+    auto net = p::network();
+    auto bt = p::bluetooth();
+    auto kb = p::keyboard_layout();
+
     std::string j = "{";
+    // system metrics (fork-free, from /proc + /sys)
     j += "\"cpu\":" + round1(s.cpu_usage) + ",";
+    j += "\"mem\":" + round1(s.mem_usage) + ",";
     j += "\"memUsed\":" + std::to_string(s.mem_used) + ",";
     j += "\"memTotal\":" + std::to_string(s.mem_total) + ",";
-    j += "\"mem\":" + round1(s.mem_usage) + ",";
-    j += "\"netRx\":" + std::to_string(static_cast<long long>(std::llround(s.net_rx))) + ",";
-    j += "\"netTx\":" + std::to_string(static_cast<long long>(std::llround(s.net_tx))) + ",";
-    j += "\"batteryPresent\":" + std::string(s.battery_present ? "true" : "false") + ",";
-    j += "\"battery\":" + std::to_string(s.battery_capacity) + ",";
-    j += "\"batteryStatus\":\"" + json_escape(s.battery_status) + "\"";
+    j += "\"netRx\":" + num(s.net_rx) + ",";
+    j += "\"netTx\":" + num(s.net_tx) + ",";
+
+    j += "\"battery\":{\"percent\":" + std::to_string(s.battery_capacity) +
+         ",\"status\":" + qstr(s.battery_status) +
+         ",\"icon\":" + qstr(p::battery_icon(s.battery_capacity, s.battery_status)) +
+         ",\"present\":" + bstr(s.battery_present) + "},";
+
+    j += "\"audio\":{\"volume\":" + std::to_string(audio.volume) +
+         ",\"icon\":" + qstr(audio.icon) + ",\"muted\":" + bstr(audio.muted) + "},";
+
+    j += "\"network\":{\"status\":" + qstr(net.status) + ",\"ssid\":" + qstr(net.ssid) +
+         ",\"icon\":" + qstr(net.icon) + ",\"ethStatus\":" + qstr(net.eth_status) + "},";
+
+    j += "\"bt\":{\"present\":" + bstr(bt.present) + ",\"status\":" + qstr(bt.status) +
+         ",\"connected\":" + qstr(bt.connected) + ",\"icon\":" + qstr(bt.icon) + "},";
+
+    j += "\"kb\":" + qstr(kb);
     j += "}";
     return j;
 }

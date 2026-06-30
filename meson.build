@@ -6,4 +6,5 @@ executable('amplitude',
   'src/main.cpp',
   'src/metrics.cpp',
   'src/sysfs.cpp',
+  'src/probe.cpp',
   install : true)
