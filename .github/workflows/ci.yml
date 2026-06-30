@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: meson build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: install toolchain
+        run: sudo apt-get update && sudo apt-get install -y meson ninja-build g++
+      - name: configure
+        run: meson setup build
+      - name: compile
+        run: meson compile -C build
+      - name: smoke test
+        run: ./build/vitals --once --interval 200 --out /tmp/v.json && cat /tmp/v.json
