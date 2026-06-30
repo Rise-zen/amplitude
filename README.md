@@ -40,7 +40,14 @@ sampled deltas, atomic writes so a reader never sees a half-written file.
 | `batteryPresent` | whether a `BAT*` supply exists |
 | `battery` / `batteryStatus` | capacity 0..100, charge status |
 
-## Build
+## Install
+
+```sh
+./install.sh            # build + install to ~/.local/bin
+./install.sh --system   # build + install to /usr/local/bin (sudo)
+```
+
+Or build manually:
 
 ```sh
 meson setup build
